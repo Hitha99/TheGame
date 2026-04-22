@@ -309,7 +309,7 @@ QuantumGame/
 
 ### ¹ Quantum Rules Engine & Prompt Template (`quantum_rules.py`, `narrative.py` core)
 
-`quantum_rules.py` and `prompt_template.txt` were authored by **Samhitha Kondeti** (rules design, content, system prompt, and tone guide) and integrated by **Bari Vadaria**, for CSCE 656-600 Computer New Media at Texas A&M University. Called from the Flask route by **Zhengming Yu** and **Carrigan Royer**.
+`quantum_rules.py` and `prompt_template.txt` were authored by **Samhitha Kondeti** (rules design, content, system prompt, and tone guide) and `quantum_rules.py` integrated by **Bari Vadaria**, `prompt_template.txt` integrated by **Hitha Magadi Vijayanand** for CSCE 656-600 Computer New Media at Texas A&M University. Called from the Flask route by **Zhengming Yu** and **Carrigan Royer**.
 
 **From `quantum_rules.py`** (used verbatim, no logic changes):
 - **Intent parsing** — `parse_intent()` converts free-text player input into structured `ActionIntent` objects using keyword matching
