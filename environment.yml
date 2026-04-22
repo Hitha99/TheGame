@@ -1,0 +1,11 @@
+name: quantumgame
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - flask>=3.0.0
+      - python-dotenv>=1.0.0
+      - requests>=2.31.0
