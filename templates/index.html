@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>QLAB-7 // Quantum Text Adventure</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- Scanline overlay -->
+  <div class="scanlines" aria-hidden="true"></div>
+
+  <!-- ── API Key Modal ───────────────────────────────────────────────────── -->
+  <div id="api-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="API Key Settings">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title">TAMU AI CHAT — API KEY</span>
+        <button class="modal-close" id="modal-close-btn" aria-label="Close">✕</button>
+      </div>
+      <p class="modal-desc">
+        Enter your <strong>TAMU AI Chat API key</strong> to enable AI-generated narrative.<br />
+        The key is stored only in your browser's local storage and sent directly to the Flask server.
+        <br /><br />
+        Leave blank to play with built-in fallback narration.
+      </p>
+      <label class="modal-label" for="api-key-input">API KEY</label>
+      <input
+        id="api-key-input"
+        type="password"
+        class="modal-input"
+        placeholder="paste your key here…"
+        autocomplete="off"
+        spellcheck="false"
+      />
+      <div class="modal-actions">
+        <button class="btn-primary" id="save-api-key-btn">SAVE &amp; CLOSE</button>
+        <button class="btn-secondary" id="clear-api-key-btn">CLEAR KEY</button>
+      </div>
+      <p class="modal-hint" id="api-key-status"></p>
+    </div>
+  </div>
+
+  <!-- ── Story Selection Screen ────────────────────────────────────────── -->
+  <div id="story-select-screen" class="story-screen">
+    <div class="story-screen-inner">
+      <div class="story-screen-title">◈ QLAB-7 // SELECT SCENARIO</div>
+      <div class="story-screen-subtitle">Choose a world. The rules do not change. The story does.</div>
+      <div class="story-cards" id="story-cards">
+        <!-- Cards injected by game.js -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Main Terminal ───────────────────────────────────────────────────── -->
+  <div class="terminal-wrapper">
+
+    <!-- Header bar -->
+    <header class="term-header">
+      <div class="header-left">
+        <span class="header-logo">◈ QLAB-7</span>
+        <span class="header-sep">|</span>
+        <span class="header-subtitle">QUANTUM SIMULATION INTERFACE v2157.3</span>
+      </div>
+      <div class="header-right">
+        <button class="btn-icon" id="api-key-btn" title="Configure API Key" aria-label="Configure API Key">
+          ⚙ API KEY
+        </button>
+        <button class="btn-icon" id="restart-btn" title="New Game" aria-label="Start new game">
+          ↺ RESTART
+        </button>
+      </div>
+    </header>
+
+    <!-- Status bar -->
+    <div class="status-bar" id="status-bar">
+      <span class="stat" id="stat-room">◈ —</span>
+      <span class="stat-sep">│</span>
+      <span class="stat" id="stat-turn">TURN —/25</span>
+      <span class="stat-sep">│</span>
+      <span class="stat" id="stat-observer">OBSERVER: —</span>
+      <span class="stat-sep">│</span>
+      <span class="stat" id="stat-inv">INV: —</span>
+      <span class="stat-sep">│</span>
+      <span class="stat" id="stat-exits">EXITS: —</span>
+      <span class="stat-sep">│</span>
+      <span class="stat" id="stat-narr-mode">NARR: —</span>
+    </div>
+
+    <!-- Narrative scroll area -->
+    <main class="narrative-area" id="narrative-area" role="log" aria-live="polite" aria-atomic="false">
+      <!-- Entries are injected here by game.js -->
+      <div class="boot-screen" id="boot-screen">
+        <div class="boot-line">QLAB-7 SIMULATION INTERFACE</div>
+        <div class="boot-line">YEAR 2157 — COHERENCE CRITICAL</div>
+        <div class="boot-line boot-blink">INITIALIZING…</div>
+      </div>
+    </main>
+
+    <!-- Input area -->
+    <footer class="input-area">
+      <div class="input-row">
+        <span class="input-prompt" aria-hidden="true">&gt;</span>
+        <input
+          id="player-input"
+          type="text"
+          class="player-input"
+          placeholder="what do you do?"
+          autocomplete="off"
+          autocorrect="off"
+          autocapitalize="off"
+          spellcheck="false"
+          aria-label="Player action input"
+          disabled
+        />
+        <button class="btn-send" id="send-btn" disabled aria-label="Submit action">
+          SEND
+        </button>
+      </div>
+      <div class="input-hint">
+        type naturally: <em>examine the door</em> · <em>take mirror key</em> · <em>go north</em> · <em>use quantum key on core stabilizer</em>
+      </div>
+    </footer>
+
+  </div><!-- /terminal-wrapper -->
+
+  <!-- ── Win / Lose Overlay ─────────────────────────────────────────────── -->
+  <div id="end-overlay" class="end-overlay hidden" role="alert">
+    <div class="end-box">
+      <div class="end-status" id="end-status">SIMULATION TERMINATED</div>
+      <div class="end-message" id="end-message"></div>
+      <button class="btn-primary end-restart" id="end-restart-btn">BEGIN AGAIN</button>
+    </div>
+  </div>
+
+  <!-- ── Loading spinner (shown while waiting for AI) ───────────────────── -->
+  <div id="loading-indicator" class="loading hidden" aria-label="Loading">
+    <span class="loading-dots">
+      <span>·</span><span>·</span><span>·</span>
+    </span>
+  </div>
+
+  <script src="/static/game.js"></script>
+</body>
+</html>

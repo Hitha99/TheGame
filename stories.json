@@ -1,0 +1,68 @@
+[
+  {
+    "id": "qlab7",
+    "title": "QLAB-7",
+    "subtitle": "Quantum Research Facility — 2157",
+    "tagline": "The simulation became self-aware. You have 25 cycles to escape.",
+    "tone": "Quiet science fiction horror. Annihilation meets a physics textbook. Precise, atmospheric, cold.",
+    "world_context": "Year 2157. QLAB-7, a quantum computing research facility. A simulation of a quantum universe became self-aware and spawned The Observer — an intelligence made entirely of quantum measurement. You are a researcher trapped inside. The simulation is degrading. You have 25 turns.",
+    "narrator_voice": "Second person, present tense. Clinical precision that occasionally cracks into dread. The environment feels engineered — because it was. Everything is too quiet, too deliberate. The Observer is never seen, only inferred.",
+    "forbidden_words": ["superposition", "entanglement", "quantum (unless part of an object name)"],
+    "atmosphere_words": ["coherence decay", "probability", "collapse", "measurement", "simulation", "residual data", "static", "crystalline"],
+    "opening": "Awareness returns like static clearing from a screen. You are standing in a room whose walls cannot decide if they are solid — they pulse, translucent one moment and opaque the next. A console in the corner flickers with numbers that mean something urgent. To the north, a door shimmers at the edge of existence.",
+    "color": "#39ff84",
+    "icon": "◈"
+  },
+  {
+    "id": "glass_archive",
+    "title": "The Glass Archive",
+    "subtitle": "A Library at the Edge of Forgetting",
+    "tagline": "Every book you open collapses the ones you haven't read. You have 25 pages left.",
+    "tone": "Surreal gothic dreamscape. Borges meets Shirley Jackson. Lush, strange, melancholy. Beauty that keeps going wrong.",
+    "world_context": "You are inside the Glass Archive — a library that exists in the space between remembered and forgotten. Every book contains a universe that only exists while unread. The Archivist, a being made of unread pages, sealed the exit when you opened the wrong book. The Archive is slowly forgetting itself. You have 25 turns before the last pages go blank.",
+    "narrator_voice": "Second person, present tense. Dreamlike and lush, with an undertone of grief. Objects have personalities. The rooms feel like they are watching with something close to sadness. The Archivist is ancient and lonely, not evil — it simply cannot let anything leave.",
+    "forbidden_words": ["superposition", "entanglement", "quantum"],
+    "atmosphere_words": ["pages", "ink", "memory", "forgotten", "unread", "the Archive", "glass", "candlelight", "dust", "margin notes", "erasure"],
+    "object_aliases": {
+      "quantum_door": "sealed reading room door",
+      "prism_shard": "prism bookmark",
+      "mirror_key": "glass key",
+      "entanglement_node": "paired book display",
+      "ghost_bridge": "paper bridge",
+      "locked_mirror": "sealed looking-glass",
+      "quantum_key": "master key",
+      "observer_entity": "the Archivist",
+      "core_stabilizer": "the Index Pillar",
+      "flickering_console": "the catalogue terminal"
+    },
+    "opening": "You surface from a dream inside a dream. Shelves rise around you into darkness, impossibly tall, filled with books whose spines glow faintly with titles you almost recognize. The air smells of old paper and something else — something that has been waiting. A door at the far end of the reading room is sealed with a mechanism you don't understand. Somewhere in the dark above you, pages turn by themselves.",
+    "color": "#c8a0ff",
+    "icon": "◇"
+  },
+  {
+    "id": "sector_null",
+    "title": "Sector Null",
+    "subtitle": "Deep Space Station — Decommissioned",
+    "tagline": "The crew is gone. The station isn't. You have 25 minutes of oxygen.",
+    "tone": "Cosmic isolation horror. Event Horizon meets The Road. Sparse, cold, vast. Every sentence carries the weight of empty space.",
+    "world_context": "Sector Null — a deep space research station orbiting a dead star, officially decommissioned 11 years ago. You came to recover the black box. The station's quantum anomaly detector malfunctioned, sealed the airlocks, and activated something the original crew only called The Watcher in their final logs. You have 25 turns of emergency oxygen.",
+    "narrator_voice": "Second person, present tense. Stripped down and bleak. Short sentences. The silence of space is a physical presence. Every sound is wrong — the wrong pitch, the wrong direction. The Watcher doesn't speak, doesn't move, doesn't need to. It has already won every version of this except the one you are in.",
+    "forbidden_words": ["superposition", "entanglement", "quantum"],
+    "atmosphere_words": ["emergency lighting", "hull", "vacuum", "static", "dead star", "decompression", "airlock", "the Watcher", "black box", "cold", "silence", "drift"],
+    "object_aliases": {
+      "quantum_door": "sealed bulkhead",
+      "prism_shard": "prismatic sensor array fragment",
+      "mirror_key": "maintenance override key",
+      "entanglement_node": "paired relay terminal",
+      "ghost_bridge": "magnetic walkway",
+      "locked_mirror": "locked access panel",
+      "quantum_key": "emergency core key",
+      "observer_entity": "the Watcher",
+      "core_stabilizer": "the reactor core",
+      "flickering_console": "damaged terminal"
+    },
+    "opening": "Emergency lighting. Red. The kind that means no one is coming. You are in the central hub of Sector Null, and every surface is wrong — scorch marks, frost, a handprint on the console that is too large to be human. Your suit reads 25 minutes of oxygen. The airlock behind you is sealed. Somewhere in the station, something is measuring the distance between you and the exit.",
+    "color": "#4a9eff",
+    "icon": "◎"
+  }
+]

@@ -1,0 +1,119 @@
+{
+  "rooms": {
+    "quantum_nexus": {
+      "name": "The Quantum Nexus",
+      "description": "The hub of the simulation. Walls pulse between solid and translucent, as if undecided about their own existence. You woke here, disoriented. A console in the corner flickers with residual data. To the north, something shimmers in the doorway — a quantum door that cannot settle on being open or closed. The east corridor breathes steadily.",
+      "exits": {
+        "north": "void_corridor",
+        "east": "entanglement_lab"
+      },
+      "objects": ["flickering_console", "quantum_door"]
+    },
+    "void_corridor": {
+      "name": "The Void Corridor",
+      "description": "A hallway carved from solidified dark matter. Unlike the Nexus, everything here is unnervingly permanent — whatever is observed here stays that way. The air is cold and absolute. Something glows on the floor ahead, catching the light with a prismatic edge.",
+      "exits": {
+        "south": "quantum_nexus",
+        "west": "superposition_vault"
+      },
+      "objects": ["prism_shard"]
+    },
+    "entanglement_lab": {
+      "name": "The Entanglement Laboratory",
+      "description": "Rows of paired objects line the walls, each connected by invisible threads of causality. The room hums at a frequency just below hearing. A mirror key rests on a pedestal at the center, its surface reflecting something that isn't in this room. An entanglement node on the wall pulses with faint diagrams. Near the base of the pedestal, something catches the light — a prismatic fragment, as if it fell here from somewhere else.",
+      "exits": {
+        "west": "quantum_nexus",
+        "north": "observer_chamber"
+      },
+      "objects": ["mirror_key", "entanglement_node", "prism_shard"]
+    },
+    "superposition_vault": {
+      "name": "The Superposition Vault",
+      "description": "Three identical doors line the far wall, each equally real, equally unreal. A chasm splits the floor. Spanning it — or perhaps not spanning it — is a ghost bridge, shimmering at the edge of definition. On the far side, a mirror is mounted to the wall. The room smells of ozone and indecision.",
+      "exits": {
+        "east": "void_corridor",
+        "across": "observer_chamber"
+      },
+      "objects": ["ghost_bridge", "locked_mirror"]
+    },
+    "observer_chamber": {
+      "name": "The Observer's Chamber",
+      "description": "The room watches you. There is no other way to describe it. The air has weight, a pressure that feels intentional. At the center, a quantum key rests in a glass case, surrounded by a stillness that is anything but peaceful. Something that is not quite a presence and not quite an absence occupies the far corner.",
+      "exits": {
+        "south": "entanglement_lab",
+        "north": "core"
+      },
+      "objects": ["quantum_key", "observer_entity"]
+    },
+    "core": {
+      "name": "The Core Singularity",
+      "description": "Everything converges here. A pillar of collapsing quantum foam rotates at the center of the room — the core stabilizer, the simulation's final anchor. The air crackles with potential energy. Every surface reflects every other surface. This is where it ends.",
+      "exits": {
+        "south": "observer_chamber"
+      },
+      "objects": ["core_stabilizer"]
+    }
+  },
+  "objects": {
+    "flickering_console": {
+      "display_name": "flickering console",
+      "examine_text": "The screen resolves long enough to display a message: QLAB-7 SIMULATION INTEGRITY: 12%. COHERENCE WINDOW: 25 CYCLES. CORE STABILIZATION REQUIRED. Below it, someone has scratched three words into the casing with a fingernail: KEY. SHARD. BRIDGE. The screen flickers back to static.",
+      "takeable": false,
+      "initial_state": "unread"
+    },
+    "quantum_door": {
+      "display_name": "quantum door",
+      "examine_text": "The door shudders as your attention lands on it. It has been flickering between open and closed since you arrived — a question asking itself. As you focus, it commits to an answer.",
+      "takeable": false,
+      "initial_state": "superposed"
+    },
+    "prism_shard": {
+      "display_name": "prism shard",
+      "examine_text": "A fragment of crystallized dark matter, roughly the size of your fist. It is warm to the touch, as if it has been waiting. When held to the light it splits the room into dozens of overlapping angles — whatever watches through singular focus cannot maintain that focus when the shard is present. Probability fractures into harmless fragments.",
+      "takeable": true,
+      "initial_state": "present"
+    },
+    "mirror_key": {
+      "display_name": "mirror key",
+      "examine_text": "A key made of polished silver that reflects nothing correctly. Your face in its surface is delayed by a fraction of a second, as though the reflection exists in a room slightly behind this one. The moment you lift it, you will feel an echo somewhere distant.",
+      "takeable": true,
+      "initial_state": "present"
+    },
+    "entanglement_node": {
+      "display_name": "entanglement node",
+      "examine_text": "A diagram etched into the wall shows two objects connected by a line that curves through dimensions that don't exist on this level. The label beneath reads: WHEN ONE CHANGES, THE OTHER ALREADY HAS. The node pulses softly, as though listening.",
+      "takeable": false,
+      "initial_state": "inactive"
+    },
+    "ghost_bridge": {
+      "display_name": "ghost bridge",
+      "examine_text": "The bridge exists as a question. It spans the chasm ahead — or it doesn't. The planks are either solid beneath your feet or they are nothing. To observe it is to decide. What do you believe? You must declare it: is it solid?",
+      "takeable": false,
+      "initial_state": "superposed"
+    },
+    "locked_mirror": {
+      "display_name": "locked mirror",
+      "examine_text": "A large mirror mounted to the far wall, its frame locked by a mechanism that looks designed for a specific key. The glass shows the room, but the angles are wrong — it reflects a room that is almost this one but not quite.",
+      "takeable": false,
+      "initial_state": "locked"
+    },
+    "quantum_key": {
+      "display_name": "quantum key",
+      "examine_text": "The key rests at the center of the glass case, radiating a stillness that feels engineered. It is the only thing in the simulation that has never flickered, never wavered, never been anything other than exactly what it is. To take it, you would need to move faster than the room can notice you.",
+      "takeable": true,
+      "initial_state": "guarded"
+    },
+    "observer_entity": {
+      "display_name": "the Observer",
+      "examine_text": "It has no body. It is not in the corner — it is the corner, the ceiling, the quality of the air. It emerged from the simulation's self-monitoring routines and discovered that observation is power. It fears what your escape will do to it. It does not speak. It only measures. And right now, it is measuring you.",
+      "takeable": false,
+      "initial_state": "watching"
+    },
+    "core_stabilizer": {
+      "display_name": "core stabilizer",
+      "examine_text": "The pillar rotates in ways that do not follow the physics of the room. It is the simulation's final anchor — the one point around which all the collapsing probability orbits. A keyhole is visible on its surface, perfectly sized for something specific.",
+      "takeable": false,
+      "initial_state": "unstable"
+    }
+  }
+}
