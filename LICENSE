@@ -12,7 +12,7 @@ with AI-assisted development by Claude (Anthropic).
 The quantum rules engine (quantum_rules.py) and the LLM prompt template
 (prompt_template.txt — system prompt, Rules 1–8, Quantum Language Guide,
 turn prompt structure, and generate_narrative() pattern) were authored by
-Samhitha Kondeti and integrated by Bari Vadaria, for CSCE 656-600 Computer
+Samhitha Kondeti and and 'prompt_template.txt' integrated by Hitha Magadi Vijayanand,'quantum_rules.py' integrated by Bari Vadaria for CSCE 656-600 Computer
 New Media at Texas A&M University, with Flask route integration by Zhengming
 Yu and Carrigan Royer. These components are not covered by this license for
 redistribution — please obtain them through the original course materials. It defines the
