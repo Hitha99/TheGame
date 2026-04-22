@@ -12,6 +12,22 @@ API key priority:
   3. None → falls back to pre-written narrative_hint strings (game still playable)
 """
 
+"""
+narrative.py
+============
+AI narrative generation module for the Quantum Text Adventure.
+
+System prompt, turn prompt template, Rules 1–8, Quantum Language Guide,
+and the generate_narrative() / build_turn_prompt() structure are derived
+from prompt_template.txt:
+    Author:         Samhitha Kondeti  (system prompt design + rules + tone)
+    For integration by: Hitha Magadi Vijayanand
+
+Extensions (story selection, SSE streaming, fallback narration, backoff,
+build_opening_narrative, multi-story system prompts) added by Zhengming Yu
+with AI-assisted development by Claude (Anthropic).
+"""
+
 import os
 import json
 import time

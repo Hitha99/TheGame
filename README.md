@@ -1,9 +1,5 @@
 # Quantum Text Adventure
 
-[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
-
-*© 2026 Zhengming Yu — framework co-developed with Claude (Anthropic). Non-commercial use only.*
-
 A browser-based AI text adventure with three playable scenarios. Choose your world before you start — the same quantum puzzle mechanics run underneath each one, but the LLM rewrites the entire story in a different voice, setting, and atmosphere. Built in the style of [AI Dungeon](https://aidungeon.com/) — dark terminal aesthetic, natural language commands, AI-generated atmospheric prose.
 
 ---
@@ -289,10 +285,10 @@ quantum_nexus (START)
 ```
 QuantumGame/
 ├── app.py              Flask backend — 10-step turn pipeline, story session handling
-├── quantum_rules.py    Game state engine (rules, parsing, validation, win/lose)
+├── quantum_rules.py    Game state engine (rules, parsing, validation, win/lose)  ¹
 ├── narrative.py        AI narrative generation (TAMU API + SSE streaming + fallback)
 ├── game_data.json      Room and object definitions (6 rooms, 10 objects)
-├── stories.json        Three story configs (world context, tone, voice, opening)
+├── stories.json        Three story configs (world context, tone, voice, opening)  ²
 ├── environment.yml     Conda environment spec  ← use this
 ├── requirements.txt    pip fallback
 ├── .env.example        Optional server-side API key template
@@ -302,3 +298,44 @@ QuantumGame/
 └── templates/
     └── index.html      Main page shell
 ```
+
+---
+
+## Sources and Attribution
+
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](LICENSE)
+
+*© 2026 Zhengming Yu — framework co-developed with Claude (Anthropic). Non-commercial use only.*
+
+### ¹ Quantum Rules Engine & Prompt Template (`quantum_rules.py`, `narrative.py` core)
+
+`quantum_rules.py` and `prompt_template.txt` were authored by **Samhitha Kondeti** (rules design, content, system prompt, and tone guide) and integrated by **Bari Vadaria**, for CSCE 656-600 Computer New Media at Texas A&M University. Called from the Flask route by **Zhengming Yu** and **Carrigan Royer**.
+
+**From `quantum_rules.py`** (used verbatim, no logic changes):
+- **Intent parsing** — `parse_intent()` converts free-text player input into structured `ActionIntent` objects using keyword matching
+- **Action validation** — `is_valid_action()` enforces all quantum-state constraints (door collapse, bridge declaration, observer gate, item requirements)
+- **Quantum effects** — `apply_quantum_effect()` and `check_entanglement_cascade()` handle superposition collapse, entanglement propagation, and observer interactions
+- **Win/lose evaluation** — `evaluate_win_loss()` checks terminal conditions each turn
+- **State summary** — `get_quantum_state_summary()` packages current state for the AI narrative prompt
+
+**From `prompt_template.txt`** (used verbatim or closely adapted in `narrative.py`):
+- The LLM system prompt (YOUR ROLE, VOICE AND FORMAT, Rules 1–8)
+- The Quantum Language Guide (prose substitutes for superposition, entanglement, observer)
+- The `--- GAME STATE --- / --- THIS TURN --- / --- INSTRUCTIONS ---` turn prompt structure
+- The `generate_narrative()` function pattern (messages list, history rolling, API parameters)
+
+Extensions built on top of these foundations by **Zhengming Yu** with Claude: story selection system, SSE streaming, fallback narration, API backoff, multi-story system prompts, and the full Flask web application.
+
+### ² Plot and Story World (`stories.json`, `narrative.py`, `game_data.json`)
+
+The game world, puzzle structure, narrative tone, and the three story scenarios were designed by **Zhengming Yu**, with AI-assisted writing by **Claude (Anthropic)**. This includes:
+
+- The six-room map and ten interactive objects (`game_data.json`)
+- The overarching plot: simulation integrity failure, The Observer, the quantum key, the core stabilizer
+- All three story scenarios and their narrative voices (`stories.json`):
+  - *QLAB-7* — sci-fi horror, quantum research facility
+  - *The Glass Archive* — surreal gothic, collapsing library
+  - *Sector Null* — cosmic isolation horror, deep-space station
+- The system prompt design and fallback narration strings (`narrative.py`)
+
+The full-stack web application framework (Flask backend, terminal-style frontend, API integration) was built by **Zhengming Yu** with **Claude (Anthropic)**.

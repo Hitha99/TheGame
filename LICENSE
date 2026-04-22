@@ -2,7 +2,23 @@ Creative Commons Attribution-NonCommercial 4.0 International License (CC BY-NC 4
 
 Copyright (c) 2026 Zhengming Yu
 
-This work was created by Zhengming Yu with AI-assisted framework development by Claude (Anthropic).
+AUTHORSHIP AND ATTRIBUTION
+───────────────────────────
+
+Application framework, story world, plot, narrative design, and the three story
+scenarios (QLAB-7 / The Glass Archive / Sector Null) were created by Zhengming Yu
+with AI-assisted development by Claude (Anthropic).
+
+The quantum rules engine (quantum_rules.py) and the LLM prompt template
+(prompt_template.txt — system prompt, Rules 1–8, Quantum Language Guide,
+turn prompt structure, and generate_narrative() pattern) were authored by
+Samhitha Kondeti and integrated by Bari Vadaria, for CSCE 656-600 Computer
+New Media at Texas A&M University, with Flask route integration by Zhengming
+Yu and Carrigan Royer. These components are not covered by this license for
+redistribution — please obtain them through the original course materials. It defines the
+game's core mechanical layer (intent parsing, action validation, quantum
+effects, win/loss evaluation) and is not covered by this license for
+redistribution — please obtain it through the original course materials.
 
 ---
 

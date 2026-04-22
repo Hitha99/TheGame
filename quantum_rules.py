@@ -3,6 +3,10 @@ quantum_rules.py
 ================
 Quantum mechanics module for "The Game."
 
+Author:      Samhitha Kondeti  (rules design + content)
+Integrate:   Bari Vadaria       (wire into state engine)
+Calls from:  Zhengming Yu / Carrigan Royer (state engine → Flask route)
+
 This module is intentionally self-contained and side-effect free.
 Every function takes a game_state dict and returns a NEW game_state dict.
 The original state is never mutated — always copy.deepcopy() first.
