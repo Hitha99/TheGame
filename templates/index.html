@@ -54,7 +54,8 @@
     </div>
   </div>
 
-  <!-- ── Main Terminal ───────────────────────────────────────────────────── -->
+  <!-- ── Play layout: narrative (half) + scene image (half) ───────────────── -->
+  <div id="play-layout" class="play-layout">
   <div class="terminal-wrapper">
 
     <!-- Header bar -->
@@ -89,6 +90,8 @@
       <span class="stat" id="stat-narr-mode">NARR: —</span>
     </div>
 
+    <div id="narration-a11y-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
     <!-- Narrative scroll area -->
     <main class="narrative-area" id="narrative-area" role="log" aria-live="polite" aria-atomic="false">
       <!-- Entries are injected here by game.js -->
@@ -122,9 +125,39 @@
       <div class="input-hint">
         type naturally: <em>examine the door</em> · <em>take mirror key</em> · <em>go north</em> · <em>use quantum key on core stabilizer</em>
       </div>
+      <label class="audio-narration-row" title="Uses your browser’s built-in voice (no server audio). When possible, speech rate is matched to the typewriter; long lines speak after text finishes. Safari/iOS may require a tap or keystroke before speech starts.">
+        <input type="checkbox" id="audio-narration-toggle" />
+        <span>Read narrative aloud</span>
+      </label>
+      <label class="audio-narration-row ambient-sfx-row" title="Uses pre-generated WAVs in static/audio_themes/ when present (run scripts/pregenerate_audio_themes.py); otherwise live Web Audio. Ambient + send/win/lose stingers. Off by default.">
+        <input type="checkbox" id="ambient-sfx-toggle" />
+        <span>Theme ambient &amp; UI sounds</span>
+      </label>
+      <label class="audio-narration-row theme-music-row" title="Looping background beds per story (music_*.wav). Run scripts/pregenerate_audio_themes.py. Requires no extra packages. Independent from ambient/UI.">
+        <input type="checkbox" id="theme-music-toggle" />
+        <span>Background theme music</span>
+      </label>
     </footer>
 
   </div><!-- /terminal-wrapper -->
+
+  <aside class="scene-panel" id="scene-panel" aria-label="Generated scene visualization">
+    <div class="scene-panel-head">
+      <span class="scene-head-title">VISUAL SENSOR</span>
+      <span class="scene-head-sub">room context · generated image</span>
+    </div>
+    <div class="scene-frame">
+      <img id="scene-image" class="scene-image" alt="" decoding="async" />
+      <div id="scene-loading" class="scene-loading hidden" aria-live="polite">Loading scene…</div>
+      <div id="scene-fallback" class="scene-fallback hidden" role="status">No image (offline or blocked).</div>
+    </div>
+    <p class="scene-caption" id="scene-caption"></p>
+    <label class="scene-toggle">
+      <input type="checkbox" id="scene-images-toggle" checked />
+      <span>Scene imagery</span>
+    </label>
+  </aside>
+  </div><!-- /play-layout -->
 
   <!-- ── Win / Lose Overlay ─────────────────────────────────────────────── -->
   <div id="end-overlay" class="end-overlay hidden" role="alert">
@@ -142,6 +175,7 @@
     </span>
   </div>
 
+  <script src="/static/audio-theme.js"></script>
   <script src="/static/game.js"></script>
 </body>
 </html>

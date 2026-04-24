@@ -69,58 +69,83 @@ When you open the game a selection screen appears. Pick one scenario — the qua
 
 ---
 
-## Quick Start (Conda — recommended)
+## Clone and run (what most people need)
 
-### 1. Create the environment
+**Requirements:** Python **3.10+** (3.11+ recommended). You do **not** need conda.
+
+Use the directory that contains **`app.py`** and **`requirements.txt`** (after `git clone`, `cd` into that folder — it may be nested, e.g. `SomeRepo/TheGame/`).
+
+### 1. Virtual environment + dependencies
+
+Many systems (e.g. Homebrew Python on macOS) block installing packages globally ([PEP 668](https://peps.python.org/pep-0668/)). A project venv avoids that:
 
 ```bash
-cd QuantumGame
-conda env create -f environment.yml
+cd /path/to/folder-containing-app.py
+python3 -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+python3 -m pip install -U pip
+python3 -m pip install -r requirements.txt
 ```
 
-### 2. Activate it
+If `pip` is missing, use **`python3 -m pip`** as shown (no separate `pip` command required).
 
-```bash
-conda activate quantumgame
-```
-
-### 3. (Optional) Set your API key via environment variable
+### 2. (Optional) `.env` file
 
 ```bash
 cp .env.example .env
-# Edit .env and add your TAMUS_AI_CHAT_API_KEY
+# Edit .env if you want a server-side TAMUS_AI_CHAT_API_KEY (optional)
 ```
 
-Or skip this — you can enter your key directly in the browser UI at any time.
+You can also paste an API key in the browser (**⚙ API KEY**). The game runs without any key using built-in fallback narration.
 
-### 4. Run the server
+### 3. Start the server
 
 ```bash
 python app.py
 ```
 
-Open **http://localhost:5000** in your browser.
+Open **http://127.0.0.1:5000** in your browser. Optional: `python app.py --port 8080` or `--host 0.0.0.0`.
 
-### To deactivate the environment when done
+### Optional: pre-generate scene images (recommended for no wait)
 
-```bash
-conda deactivate
-```
-
-### To update the environment after pulling changes
+The **VISUAL SENSOR** panel normally asks Pollinations for each `(story, room, end-state)` the first time, which can take tens of seconds. **`/api/scene-image` always serves matching files from `static/scene_images/` immediately** when they exist (same naming as the script). To download the full pack once (long run, needs network):
 
 ```bash
-conda env update -f environment.yml --prune
+python scripts/pregenerate_scene_images.py
 ```
+
+After that, the server only reads bytes from disk for those keys — no upstream wait.
+
+**Optional env (see `.env.example`):**
+
+- **`SCENE_IMAGES_OFFLINE_ONLY=1`** — never hit Pollinations; missing files show the “no image” fallback instead of hanging.
+- **`SCENE_IMAGE_SAVE_FETCHED=1`** — each successful on-demand fetch is written into `static/scene_images/` so a playthrough gradually builds the same on-disk pack without running the script first.
+
+Also see `DISABLE_SCENE_IMAGES` and other scene tuning in `.env.example`.
+
+### Optional: pre-generate theme audio (ambient, music beds, UI stingers)
+
+To write small WAV loops into `static/audio_themes/` (stdlib only, no extra pip packages), including per-story **background music** (`music_*.wav`) and short UI stingers:
+
+```bash
+python scripts/pregenerate_audio_themes.py
+```
+
+The browser loads these with `fetch` + `decodeAudioData` so ambient, optional music, and UI sounds start without live synthesis work. If the folder is empty, the game falls back to procedural Web Audio for ambient only (music is WAV-only).
 
 ---
 
-## Alternative: pip install (no conda)
+## Quick Start with Conda (optional)
+
+If you prefer conda, from the same folder as `app.py`:
 
 ```bash
-pip install -r requirements.txt
+conda env create -f environment.yml
+conda activate quantumgame
 python app.py
 ```
+
+Update after pulling changes: `conda env update -f environment.yml --prune`. When finished: `conda deactivate`.
 
 ---
 
@@ -283,20 +308,28 @@ quantum_nexus (START)
 ## Project Files
 
 ```
-QuantumGame/
-├── app.py              Flask backend — 10-step turn pipeline, story session handling
-├── quantum_rules.py    Game state engine (rules, parsing, validation, win/lose)  ¹
-├── narrative.py        AI narrative generation (TAMU API + SSE streaming + fallback)
-├── game_data.json      Room and object definitions (6 rooms, 10 objects)
-├── stories.json        Three story configs (world context, tone, voice, opening)  ²
-├── environment.yml     Conda environment spec  ← use this
-├── requirements.txt    pip fallback
-├── .env.example        Optional server-side API key template
+.
+├── app.py                 Flask backend — 10-step turn pipeline, story session handling
+├── scene_image.py         Scene image URLs + prebuilt file lookup
+├── quantum_rules.py       Game state engine (rules, parsing, validation, win/lose)  ¹
+├── narrative.py           AI narrative generation (TAMU API + SSE streaming + fallback)
+├── game_data.json         Room and object definitions (6 rooms, 10 objects)
+├── stories.json           Three story configs (world context, tone, voice, opening)  ²
+├── environment.yml        Optional Conda environment spec
+├── requirements.txt       pip dependencies (clone-and-run default)
+├── .env.example           Optional server-side API key template
+├── scripts/
+│   ├── pregenerate_scene_images.py   One-time download of scene images to static/scene_images/
+│   ├── pregenerate_audio_themes.py   Writes static/audio_themes/*.wav (stdlib only)
+│   └── generate_home_background.py   Writes static/home_theme_bg.svg (story-select backdrop)
 ├── static/
-│   ├── style.css       Terminal UI, CRT scanlines, story card screen, typewriter
-│   └── game.js         Story selection, input handling, API calls, status bar
+│   ├── scene_images/      Pre-generated JPEGs (optional; see script + .gitignore)
+│   ├── audio_themes/      Pre-generated WAVs (optional; scripts/pregenerate_audio_themes.py)
+│   ├── audio-theme.js     Theme ambient + UI stingers (WAV if present, else procedural)
+│   ├── style.css          Terminal UI, CRT scanlines, story card screen, typewriter
+│   └── game.js            Story selection, input handling, API calls, scene + audio UI
 └── templates/
-    └── index.html      Main page shell
+    └── index.html         Main page shell
 ```
 
 ---

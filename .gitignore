@@ -29,3 +29,6 @@ env/
 # Test artifacts
 /tmp/
 *.log
+
+# Pre-generated assets (scene JPEGs, theme WAVs) may be committed so clones get
+# instant imagery/audio without running pregenerate_* — keep .gitkeep if a folder is empty.

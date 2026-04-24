@@ -13,8 +13,19 @@
 'use strict';
 
 /* ── Constants ───────────────────────────────────────────── */
-const LS_KEY   = 'tamus_api_key';
-const TYPE_SPD = 18; // ms per character (typewriter speed)
+const LS_KEY        = 'tamus_api_key';
+const LS_SCENE_IMGS = 'quantum_scene_images_enabled';
+const LS_AUDIO_NARR = 'quantum_audio_narration';
+const TYPE_SPD      = 18; // ms per character (typewriter speed)
+
+/** Active story id for restarting ambient after toggle (see GameAudioTheme) */
+let currentStoryIdForAmbient = null;
+
+/** Cancels deferred TTS if the player sends a new command before typewriter finishes */
+let narrativeSpeechTurn = 0;
+
+/** Last scene URL from server — re-applied when user re-enables imagery */
+let lastScenePayload = { url: null, roomLabel: '', prebuilt: false };
 
 /* ── DOM refs ────────────────────────────────────────────── */
 const narrativeArea   = document.getElementById('narrative-area');
@@ -45,6 +56,17 @@ const apiKeyStatus    = document.getElementById('api-key-status');
 
 const storyScreen = document.getElementById('story-select-screen');
 const storyCards  = document.getElementById('story-cards');
+
+const playLayout      = document.getElementById('play-layout');
+const sceneImage      = document.getElementById('scene-image');
+const sceneLoading    = document.getElementById('scene-loading');
+const sceneFallback   = document.getElementById('scene-fallback');
+const sceneCaption    = document.getElementById('scene-caption');
+const sceneImgToggle  = document.getElementById('scene-images-toggle');
+const audioNarrToggle = document.getElementById('audio-narration-toggle');
+const ambientSfxToggle = document.getElementById('ambient-sfx-toggle');
+const themeMusicToggle = document.getElementById('theme-music-toggle');
+const narrA11yStatus  = document.getElementById('narration-a11y-status');
 
 /* ── State ───────────────────────────────────────────────── */
 let gameActive     = false;
@@ -139,6 +161,176 @@ function updateNarrMode(mode) {
 }
 
 /* ═══════════════════════════════════════════════════════════
+   SCENE PANEL (half-window imagery)
+   ═══════════════════════════════════════════════════════════ */
+
+function sceneImagesEnabled() {
+  return localStorage.getItem(LS_SCENE_IMGS) !== '0';
+}
+
+function syncPlayLayoutSceneClass() {
+  if (!playLayout) return;
+  playLayout.classList.toggle('scene-images-disabled', !sceneImagesEnabled());
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUDIO NARRATION (Web Speech API — browser voice, no API key)
+   ═══════════════════════════════════════════════════════════ */
+
+function audioNarrationEnabled() {
+  return localStorage.getItem(LS_AUDIO_NARR) === '1';
+}
+
+function stopNarrationSpeech() {
+  if (typeof window.speechSynthesis !== 'undefined') {
+    window.speechSynthesis.cancel();
+  }
+}
+
+function _pickEnglishVoice() {
+  const voices = typeof window.speechSynthesis !== 'undefined'
+    ? window.speechSynthesis.getVoices()
+    : [];
+  if (!voices.length) return null;
+  const en = (v) => v.lang && v.lang.toLowerCase().startsWith('en');
+  return (
+    voices.find((v) => en(v) && /samantha|daniel|google us english|premium/i.test(v.name))
+    || voices.find((v) => en(v) && v.localService)
+    || voices.find(en)
+    || voices[0]
+  );
+}
+
+function setNarrativeA11yStatus(message) {
+  if (!narrA11yStatus || !message) return;
+  narrA11yStatus.textContent = '';
+  narrA11yStatus.textContent = message;
+}
+
+/**
+ * Decide if TTS can run in parallel with the typewriter at a matched rate, or should wait until typing ends.
+ */
+function computeNarrativeSpeechPlan(text, msPerChar) {
+  if (!audioNarrationEnabled()) return { when: 'off' };
+  const raw = String(text).trim();
+  if (!raw) return { when: 'off' };
+  const body = raw.length > 8000 ? raw.slice(0, 8000) + '…' : raw;
+  const len = body.length;
+  const durType = (len * msPerChar) / 1000;
+  const words = body.split(/\s+/).filter(Boolean).length || 1;
+  const estSpeechSecAtRate1 = Math.max(1.85, words * 0.34);
+  const rate = estSpeechSecAtRate1 / durType;
+  if (rate >= 0.73 && rate <= 1.17) {
+    return { when: 'with_typewriter', rate, body };
+  }
+  return { when: 'after_typewriter', rate: 0.88, body };
+}
+
+function speakNarrative(text, opts) {
+  if (!audioNarrationEnabled() || !text || typeof window.SpeechSynthesisUtterance === 'undefined') {
+    return;
+  }
+  const synth = window.speechSynthesis;
+  if (!synth) return;
+
+  const t = String(text).trim();
+  if (!t) return;
+
+  const body = t.length > 8000 ? t.slice(0, 8000) + '…' : t;
+  const rate = opts && typeof opts.rate === 'number' ? opts.rate : 0.88;
+
+  stopNarrationSpeech();
+
+  const run = () => {
+    const u = new SpeechSynthesisUtterance(body);
+    u.rate = rate;
+    u.pitch = 1;
+    u.volume = 1;
+    const voice = _pickEnglishVoice();
+    if (voice) u.voice = voice;
+    synth.speak(u);
+  };
+
+  if (synth.getVoices().length) {
+    run();
+    return;
+  }
+
+  let started = false;
+  const runOnce = () => {
+    if (started) return;
+    started = true;
+    synth.removeEventListener('voiceschanged', onVoices);
+    window.clearTimeout(fallbackTimer);
+    run();
+  };
+  const onVoices = () => runOnce();
+  synth.addEventListener('voiceschanged', onVoices);
+  const fallbackTimer = window.setTimeout(runOnce, 500);
+}
+
+function updateScenePanel(data) {
+  if (!sceneImage || !playLayout) return;
+
+  const url = data.scene_image_url || null;
+  const roomLabel = (data.state && data.state.room_name) ? String(data.state.room_name) : '';
+  lastScenePayload = {
+    url,
+    roomLabel,
+    prebuilt: data.scene_image_prebuilt === true,
+  };
+
+  if (!sceneImagesEnabled()) {
+    syncPlayLayoutSceneClass();
+    return;
+  }
+
+  syncPlayLayoutSceneClass();
+  sceneCaption.textContent = roomLabel ? ('◈ ' + roomLabel) : '';
+
+  if (!url) {
+    sceneImage.classList.remove('scene-image-ready');
+    sceneImage.removeAttribute('src');
+    sceneLoading.classList.add('hidden');
+    sceneFallback.classList.remove('hidden');
+    return;
+  }
+
+  sceneFallback.classList.add('hidden');
+  sceneLoading.classList.remove('hidden');
+  if (sceneLoading) {
+    sceneLoading.textContent = lastScenePayload.prebuilt
+      ? 'LOADING SCENE…'
+      : 'GENERATING SCENE… (first visit per room can take a while; run scripts/pregenerate_scene_images.py for instant on-disk images.)';
+  }
+  sceneImage.classList.remove('scene-image-ready');
+
+  const doneLoading = () => {
+    sceneLoading.classList.add('hidden');
+    sceneImage.classList.add('scene-image-ready');
+  };
+
+  sceneImage.onload = doneLoading;
+  sceneImage.onerror = () => {
+    sceneLoading.classList.add('hidden');
+    sceneFallback.classList.remove('hidden');
+    sceneImage.classList.remove('scene-image-ready');
+  };
+
+  let resolved;
+  try {
+    resolved = new URL(url, window.location.href).href;
+  } catch (_) {
+    resolved = url;
+  }
+  if (sceneImage.src === resolved) {
+    doneLoading();
+  } else {
+    sceneImage.src = url;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
    TYPEWRITER RENDERER
    ═══════════════════════════════════════════════════════════ */
 
@@ -190,9 +382,36 @@ function appendEntry(actionText, narrativeText, variant) {
   narrativeArea.appendChild(entry);
   narrativeArea.scrollTop = narrativeArea.scrollHeight;
 
+  const isEndGame = variant === 'win' || variant === 'lose';
+  const turnId = ++narrativeSpeechTurn;
+
+  if (isEndGame) {
+    stopNarrationSpeech();
+    textEl.textContent = narrativeText;
+    typewriterBusy = false;
+    setNarrativeA11yStatus(variant === 'win' ? 'Victory — narrative shown; speech off.' : 'Game over — narrative shown; speech off.');
+    narrativeArea.scrollTop = narrativeArea.scrollHeight;
+    return Promise.resolve();
+  }
+
+  const plan = computeNarrativeSpeechPlan(narrativeText, TYPE_SPD);
+
+  if (plan.when === 'with_typewriter') {
+    setNarrativeA11yStatus('New reply: speech paced with on-screen typing.');
+    speakNarrative(narrativeText, { rate: plan.rate });
+  } else if (plan.when === 'after_typewriter') {
+    setNarrativeA11yStatus('New reply: text typing first; speech will follow when it finishes.');
+  } else {
+    setNarrativeA11yStatus('New reply: on-screen text is typing.');
+  }
+
   return new Promise((resolve) => {
     typewriterRender(textEl, narrativeText, TYPE_SPD, () => {
       narrativeArea.scrollTop = narrativeArea.scrollHeight;
+      if (turnId === narrativeSpeechTurn && plan.when === 'after_typewriter') {
+        speakNarrative(narrativeText, { rate: plan.rate });
+      }
+      setNarrativeA11yStatus('Narrative text finished displaying.');
       resolve();
     });
   });
@@ -219,6 +438,8 @@ function setLoading(on) {
    ═══════════════════════════════════════════════════════════ */
 
 function showEndOverlay(status, narrative) {
+  stopNarrationSpeech();
+  narrativeSpeechTurn++;
   endOverlay.classList.remove('hidden');
   endBox.className = 'end-box ' + (status === 'win' ? 'win' : 'lose');
   endStatus.textContent = status === 'win'
@@ -235,6 +456,10 @@ restartBtn.addEventListener('click', showStorySelect);
    ═══════════════════════════════════════════════════════════ */
 
 async function showStorySelect() {
+  narrativeSpeechTurn++;
+  stopNarrationSpeech();
+  currentStoryIdForAmbient = null;
+  if (window.GameAudioTheme) window.GameAudioTheme.stopAmbient();
   endOverlay.classList.add('hidden');
   storyScreen.classList.remove('hidden');
   storyCards.innerHTML = '<div style="color:var(--text-dim);font-size:12px;letter-spacing:.08em">LOADING…</div>';
@@ -256,6 +481,7 @@ async function showStorySelect() {
         <span class="story-card-select" style="color:${story.color}">[ BEGIN ]</span>
       `;
       card.addEventListener('click', () => {
+        if (window.GameAudioTheme) window.GameAudioTheme.primeUserGesture();
         selectedStory = story.id;
         storyScreen.classList.add('hidden');
         startGame(story.id);
@@ -272,6 +498,8 @@ async function showStorySelect() {
    ═══════════════════════════════════════════════════════════ */
 
 async function startGame(storyId) {
+  stopNarrationSpeech();
+  narrativeSpeechTurn++;
   // Reset UI
   endOverlay.classList.add('hidden');
   narrativeArea.innerHTML = '';
@@ -292,6 +520,7 @@ async function startGame(storyId) {
   statExits.textContent = 'EXITS: —';
 
   setLoading(true);
+  setNarrativeA11yStatus('Starting game; loading opening narrative.');
 
   try {
     const res = await fetch('/api/start', {
@@ -312,7 +541,10 @@ async function startGame(storyId) {
     }
     updateStatusBar(data.state);
     updateNarrMode(data.narrative_mode);
+    updateScenePanel(data);
     gameActive = true;
+    currentStoryIdForAmbient = (data.story && data.story.id) ? data.story.id : (storyId || selectedStory || 'qlab7');
+    if (window.GameAudioTheme) window.GameAudioTheme.startThemedAudio(currentStoryIdForAmbient);
     setLoading(false);
 
     await appendEntry(null, data.narrative);
@@ -331,10 +563,14 @@ async function submitAction() {
   const raw = playerInput.value.trim();
   if (!raw || !gameActive || typewriterBusy) return;
 
+  narrativeSpeechTurn++;
+  stopNarrationSpeech();
+  if (window.GameAudioTheme) window.GameAudioTheme.playSendBlip();
   playerInput.value = '';
   disableInput();
   setLoading(true);
   appendDivider();
+  setNarrativeA11yStatus('Action sent; waiting for reply.');
 
   try {
     const res = await fetch('/api/action', {
@@ -348,12 +584,20 @@ async function submitAction() {
 
     updateStatusBar(data.state);
     updateNarrMode(data.narrative_mode);
+    updateScenePanel(data);
     setLoading(false);
 
     const variant = data.status === 'win' ? 'win' : data.status === 'lose' ? 'lose' : null;
     await appendEntry(raw, data.narrative, variant);
 
     if (data.status === 'win' || data.status === 'lose') {
+      stopNarrationSpeech();
+      narrativeSpeechTurn++;
+      if (window.GameAudioTheme) {
+        if (data.status === 'win') window.GameAudioTheme.playWinStinger();
+        else window.GameAudioTheme.playLoseStinger();
+        window.GameAudioTheme.stopAmbient();
+      }
       gameActive = false;
       setTimeout(() => showEndOverlay(data.status, data.narrative), 600);
     } else {
@@ -382,6 +626,9 @@ function disableInput() {
 /* ── Event bindings ──────────────────────────────────────── */
 
 sendBtn.addEventListener('click', submitAction);
+sendBtn.addEventListener('mousedown', () => {
+  if (window.GameAudioTheme) window.GameAudioTheme.primeUserGesture();
+});
 
 playerInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') submitAction();
@@ -392,6 +639,65 @@ playerInput.addEventListener('keydown', (e) => {
    ═══════════════════════════════════════════════════════════ */
 
 window.addEventListener('DOMContentLoaded', () => {
+  if (audioNarrToggle) {
+    audioNarrToggle.checked = audioNarrationEnabled();
+    audioNarrToggle.addEventListener('change', () => {
+      localStorage.setItem(LS_AUDIO_NARR, audioNarrToggle.checked ? '1' : '0');
+      if (!audioNarrToggle.checked) stopNarrationSpeech();
+    });
+    if (typeof window.speechSynthesis !== 'undefined') {
+      window.speechSynthesis.getVoices();
+    }
+  }
+
+  if (window.GameAudioTheme) {
+    window.GameAudioTheme.preloadFiles().catch(() => {});
+  }
+
+  if (ambientSfxToggle && window.GameAudioTheme) {
+    const k = window.GameAudioTheme.LS_KEY;
+    ambientSfxToggle.checked = localStorage.getItem(k) === '1';
+    ambientSfxToggle.addEventListener('change', () => {
+      localStorage.setItem(k, ambientSfxToggle.checked ? '1' : '0');
+      if (gameActive && currentStoryIdForAmbient) {
+        window.GameAudioTheme.primeUserGesture();
+        window.GameAudioTheme.applyThemedAudio(currentStoryIdForAmbient);
+      } else if (!ambientSfxToggle.checked && !window.GameAudioTheme.musicEnabled()) {
+        window.GameAudioTheme.stopAmbient();
+      }
+    });
+  }
+
+  if (themeMusicToggle && window.GameAudioTheme) {
+    const mk = window.GameAudioTheme.LS_MUSIC_KEY;
+    themeMusicToggle.checked = localStorage.getItem(mk) === '1';
+    themeMusicToggle.addEventListener('change', () => {
+      localStorage.setItem(mk, themeMusicToggle.checked ? '1' : '0');
+      if (gameActive && currentStoryIdForAmbient) {
+        window.GameAudioTheme.primeUserGesture();
+        window.GameAudioTheme.applyThemedAudio(currentStoryIdForAmbient);
+      } else if (!themeMusicToggle.checked && !window.GameAudioTheme.enabled()) {
+        window.GameAudioTheme.stopAmbient();
+      }
+    });
+  }
+
+  if (sceneImgToggle) {
+    sceneImgToggle.checked = sceneImagesEnabled();
+    sceneImgToggle.addEventListener('change', () => {
+      localStorage.setItem(LS_SCENE_IMGS, sceneImgToggle.checked ? '1' : '0');
+      syncPlayLayoutSceneClass();
+      if (sceneImgToggle.checked) {
+        updateScenePanel({
+          scene_image_url: lastScenePayload.url,
+          scene_image_prebuilt: lastScenePayload.prebuilt,
+          state: { room_name: lastScenePayload.roomLabel },
+        });
+      }
+    });
+    syncPlayLayoutSceneClass();
+  }
+
   // Show a brief hint if no API key is set yet
   if (!getApiKey()) {
     setTimeout(() => {

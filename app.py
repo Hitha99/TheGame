@@ -13,9 +13,14 @@ Routes:
 import json
 import copy
 import os
+from collections import OrderedDict
+from mimetypes import guess_type
 from pathlib import Path
+from threading import Lock
+from urllib.parse import quote
 
-from flask import Flask, render_template, request, session, jsonify
+import requests
+from flask import Flask, render_template, request, session, jsonify, Response, abort
 from dotenv import load_dotenv
 
 from quantum_rules import (
@@ -29,8 +34,47 @@ from quantum_rules import (
     ValidationResult,
 )
 from narrative import generate_narrative, build_opening_narrative
+from scene_image import (
+    build_scene_image_url,
+    prebuilt_scene_dir,
+    prebuilt_scene_path,
+    scene_image_save_fetched_to_disk,
+    scene_images_offline_only,
+)
 
 load_dotenv()
+
+# Pollinations scene images — LRU cache (story, room, end-state) → bytes
+_scene_image_cache: OrderedDict[tuple[str, str, str], tuple[bytes, str]] = OrderedDict()
+_scene_image_cache_lock = Lock()
+_SCENE_IMAGE_CACHE_MAX = int(os.environ.get("SCENE_IMAGE_CACHE_MAX", "48"))
+
+
+def _scene_image_payload(state: dict, status: str = "continue") -> dict:
+    """
+    Same-origin URL for <img src> plus whether bytes come from a pre-generated file.
+    When SCENE_IMAGES_OFFLINE_ONLY is set and there is no disk file (and no LRU hit),
+    scene_image_url is None so the client does not block on a doomed request.
+    """
+    if os.environ.get("DISABLE_SCENE_IMAGES", "").strip().lower() in ("1", "true", "yes"):
+        return {"scene_image_url": None, "scene_image_prebuilt": False}
+
+    st = status if status in ("win", "lose", "continue") else "continue"
+    room_id = state["current_room"]
+    story_id = session.get("story_id", "qlab7")
+    prebuilt = prebuilt_scene_path(story_id, room_id, st)
+    cache_key = (story_id, room_id, st)
+
+    in_memory = False
+    with _scene_image_cache_lock:
+        in_memory = cache_key in _scene_image_cache
+
+    if scene_images_offline_only() and prebuilt is None and not in_memory:
+        return {"scene_image_url": None, "scene_image_prebuilt": False}
+
+    v = quote(f"{story_id}-{room_id}-{st}", safe="")
+    url = f"/api/scene-image?v={v}&st={quote(st)}"
+    return {"scene_image_url": url, "scene_image_prebuilt": prebuilt is not None}
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "qlab7-secret-do-not-use-in-prod")
@@ -106,6 +150,86 @@ def index():
     return render_template("index.html")
 
 
+@app.route("/api/scene-image")
+def proxy_scene_image():
+    """Fetch Pollinations image server-side; browser loads same-origin bytes."""
+    if os.environ.get("DISABLE_SCENE_IMAGES", "").strip().lower() in ("1", "true", "yes"):
+        abort(404)
+    state = session.get("game_state")
+    if not state:
+        abort(404)
+    story_id = session.get("story_id", "qlab7")
+    story = STORIES_BY_ID.get(story_id, STORIES_BY_ID["qlab7"])
+    st = (request.args.get("st") or "continue").lower()
+    if st not in ("win", "lose", "continue"):
+        st = "continue"
+
+    cache_key = (story_id, state["current_room"], st)
+
+    prebuilt = prebuilt_scene_path(story_id, state["current_room"], st)
+    if prebuilt is not None:
+        data = prebuilt.read_bytes()
+        mime = guess_type(prebuilt.name)[0] or "image/jpeg"
+        return Response(
+            data,
+            mimetype=mime,
+            headers={"Cache-Control": "public, max-age=604800"},
+        )
+
+    with _scene_image_cache_lock:
+        if cache_key in _scene_image_cache:
+            raw, ctype = _scene_image_cache.pop(cache_key)
+            _scene_image_cache[cache_key] = (raw, ctype)
+            return Response(
+                raw,
+                mimetype=ctype,
+                headers={"Cache-Control": "private, max-age=86400"},
+            )
+
+    if scene_images_offline_only():
+        abort(404)
+
+    external = build_scene_image_url(state["current_room"], story, GAME_DATA, st)
+    if not external:
+        abort(404)
+    timeout = int(os.environ.get("SCENE_IMAGE_UPSTREAM_TIMEOUT", "120"))
+    try:
+        upstream = requests.get(
+            external,
+            timeout=max(30, min(300, timeout)),
+            headers={"User-Agent": "Mozilla/5.0 (compatible; QuantumGame/1.0)"},
+        )
+    except requests.RequestException:
+        abort(502)
+    if upstream.status_code != 200:
+        abort(502)
+    raw = upstream.content
+    if not raw or (len(raw) < 100 and raw[:1] in (b"{", b"<")):
+        abort(502)
+    ctype = upstream.headers.get("Content-Type", "image/jpeg").split(";")[0].strip()
+    if "image" not in ctype:
+        ctype = "image/jpeg"
+
+    if scene_image_save_fetched_to_disk():
+        dest = prebuilt_scene_dir() / f"{story_id}__{state['current_room']}__{st}.jpg"
+        try:
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(raw)
+        except OSError:
+            pass
+
+    with _scene_image_cache_lock:
+        _scene_image_cache[cache_key] = (raw, ctype)
+        while len(_scene_image_cache) > _SCENE_IMAGE_CACHE_MAX:
+            _scene_image_cache.popitem(last=False)
+
+    return Response(
+        raw,
+        mimetype=ctype,
+        headers={"Cache-Control": "private, max-age=86400"},
+    )
+
+
 @app.route("/api/stories", methods=["GET"])
 def get_stories():
     """Return the list of available stories for the selection screen."""
@@ -142,13 +266,15 @@ def start_game():
 
     session["conversation_history"] = [{"role": "assistant", "content": narrative}]
 
-    return jsonify({
-        "narrative":      narrative,
-        "state":          _public_state(state, summary),
-        "status":         "continue",
-        "narrative_mode": narr_mode,
-        "story":          {"id": story["id"], "title": story["title"], "color": story["color"], "icon": story["icon"]}
-    })
+    payload = {
+        "narrative":        narrative,
+        "state":            _public_state(state, summary),
+        "status":           "continue",
+        "narrative_mode":   narr_mode,
+        "story":            {"id": story["id"], "title": story["title"], "color": story["color"], "icon": story["icon"]},
+    }
+    payload.update(_scene_image_payload(state, "continue"))
+    return jsonify(payload)
 
 
 @app.route("/api/action", methods=["POST"])
@@ -204,13 +330,15 @@ def player_action():
             history.append({"role": "assistant",  "content": narrative})
             session["game_state"] = state
             session["conversation_history"] = history
-            return jsonify({
-                "narrative":      narrative,
-                "state":          _public_state(state, summary),
-                "status":         "continue",
-                "message":        "",
-                "narrative_mode": narr_mode
-            })
+            blocked_payload = {
+                "narrative":        narrative,
+                "state":            _public_state(state, summary),
+                "status":           "continue",
+                "message":          "",
+                "narrative_mode":   narr_mode,
+            }
+            blocked_payload.update(_scene_image_payload(state, "continue"))
+            return jsonify(blocked_payload)
 
     # Step 3: validate
     validation = is_valid_action(intent, state)
@@ -276,13 +404,15 @@ def player_action():
     session["game_state"] = state
     session["conversation_history"] = history
 
-    return jsonify({
-        "narrative":      narrative,
-        "state":          _public_state(state, summary),
-        "status":         game_result.status,
-        "message":        game_result.message or "",
-        "narrative_mode": narr_mode
-    })
+    end_payload = {
+        "narrative":        narrative,
+        "state":            _public_state(state, summary),
+        "status":           game_result.status,
+        "message":          game_result.message or "",
+        "narrative_mode":   narr_mode,
+    }
+    end_payload.update(_scene_image_payload(state, game_result.status))
+    return jsonify(end_payload)
 
 
 @app.route("/api/reset", methods=["POST"])
