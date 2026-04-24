@@ -64,7 +64,6 @@ const sceneFallback   = document.getElementById('scene-fallback');
 const sceneCaption    = document.getElementById('scene-caption');
 const sceneImgToggle  = document.getElementById('scene-images-toggle');
 const audioNarrToggle = document.getElementById('audio-narration-toggle');
-const ambientSfxToggle = document.getElementById('ambient-sfx-toggle');
 const themeMusicToggle = document.getElementById('theme-music-toggle');
 const narrA11yStatus  = document.getElementById('narration-a11y-status');
 
@@ -594,8 +593,6 @@ async function submitAction() {
       stopNarrationSpeech();
       narrativeSpeechTurn++;
       if (window.GameAudioTheme) {
-        if (data.status === 'win') window.GameAudioTheme.playWinStinger();
-        else window.GameAudioTheme.playLoseStinger();
         window.GameAudioTheme.stopAmbient();
       }
       gameActive = false;
@@ -654,29 +651,15 @@ window.addEventListener('DOMContentLoaded', () => {
     window.GameAudioTheme.preloadFiles().catch(() => {});
   }
 
-  if (ambientSfxToggle && window.GameAudioTheme) {
-    const k = window.GameAudioTheme.LS_KEY;
-    ambientSfxToggle.checked = localStorage.getItem(k) === '1';
-    ambientSfxToggle.addEventListener('change', () => {
-      localStorage.setItem(k, ambientSfxToggle.checked ? '1' : '0');
-      if (gameActive && currentStoryIdForAmbient) {
-        window.GameAudioTheme.primeUserGesture();
-        window.GameAudioTheme.applyThemedAudio(currentStoryIdForAmbient);
-      } else if (!ambientSfxToggle.checked && !window.GameAudioTheme.musicEnabled()) {
-        window.GameAudioTheme.stopAmbient();
-      }
-    });
-  }
-
   if (themeMusicToggle && window.GameAudioTheme) {
     const mk = window.GameAudioTheme.LS_MUSIC_KEY;
-    themeMusicToggle.checked = localStorage.getItem(mk) === '1';
+    themeMusicToggle.checked = localStorage.getItem(mk) !== '0';
     themeMusicToggle.addEventListener('change', () => {
       localStorage.setItem(mk, themeMusicToggle.checked ? '1' : '0');
       if (gameActive && currentStoryIdForAmbient) {
         window.GameAudioTheme.primeUserGesture();
         window.GameAudioTheme.applyThemedAudio(currentStoryIdForAmbient);
-      } else if (!themeMusicToggle.checked && !window.GameAudioTheme.enabled()) {
+      } else if (!themeMusicToggle.checked) {
         window.GameAudioTheme.stopAmbient();
       }
     });

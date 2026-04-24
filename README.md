@@ -325,7 +325,7 @@ quantum_nexus (START)
 ├── static/
 │   ├── scene_images/      Pre-generated JPEGs (optional; see script + .gitignore)
 │   ├── audio_themes/      Pre-generated WAVs (optional; scripts/pregenerate_audio_themes.py)
-│   ├── audio-theme.js     Theme ambient + UI stingers (WAV if present, else procedural)
+│   ├── audio-theme.js     Optional background music (music_*.wav); ambient/UI stingers off
 │   ├── style.css          Terminal UI, CRT scanlines, story card screen, typewriter
 │   └── game.js            Story selection, input handling, API calls, scene + audio UI
 └── templates/

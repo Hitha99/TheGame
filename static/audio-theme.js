@@ -1,11 +1,9 @@
 /**
- * Theme ambient + UI sounds: prefers pre-generated WAVs in /static/audio_themes/
- * (run scripts/pregenerate_audio_themes.py). Falls back to Web Audio oscillators if missing.
+ * Theme music (optional WAV beds). Ambient + UI stingers are disabled (no user toggle).
  */
 'use strict';
 
 window.GameAudioTheme = (function () {
-  const LS_KEY = 'quantum_ambient_sfx';
   const LS_MUSIC_KEY = 'quantum_theme_music';
   const BASE = '/static/audio_themes/';
 
@@ -26,11 +24,12 @@ window.GameAudioTheme = (function () {
   const musicLayers = [];
 
   function enabled() {
-    return localStorage.getItem(LS_KEY) === '1';
+    return false;
   }
 
+  /** On unless the player explicitly turned it off (stored '0'). */
   function musicEnabled() {
-    return localStorage.getItem(LS_MUSIC_KEY) === '1';
+    return localStorage.getItem(LS_MUSIC_KEY) !== '0';
   }
 
   function ensureCtx() {
@@ -55,17 +54,7 @@ window.GameAudioTheme = (function () {
       decodePromise = Promise.resolve({});
       return decodePromise;
     }
-    const keys = [
-      'ambient_qlab7',
-      'ambient_glass_archive',
-      'ambient_sector_null',
-      'music_qlab7',
-      'music_glass_archive',
-      'music_sector_null',
-      'ui_send',
-      'ui_win',
-      'ui_lose',
-    ];
+    const keys = ['music_qlab7', 'music_glass_archive', 'music_sector_null'];
     decodePromise = (async () => {
       const out = {};
       await Promise.all(
@@ -177,7 +166,7 @@ window.GameAudioTheme = (function () {
     const hasMusic = musicEnabled() && buffers && buffers[_musicKey(storyId)];
     if (buf) {
       master = c.createGain();
-      master.gain.value = hasMusic ? 0.24 : 0.32;
+      master.gain.value = hasMusic ? 0.18 : 0.32;
       const lp = c.createBiquadFilter();
       lp.type = 'lowpass';
       lp.frequency.value = hasMusic ? 4600 : 5400;
@@ -211,7 +200,10 @@ window.GameAudioTheme = (function () {
     if (!mbuf) return;
 
     const g = c.createGain();
-    g.gain.value = 0.16;
+    const t0 = c.currentTime;
+    const peak = 0.13;
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.45);
     const lp = c.createBiquadFilter();
     lp.type = 'lowpass';
     lp.frequency.value = 8200;
@@ -424,25 +416,6 @@ window.GameAudioTheme = (function () {
     });
   }
 
-  function _beep(freq, dur, type, gainVal) {
-    if (!enabled()) return;
-    const c = ensureCtx();
-    if (!c || c.state === 'suspended') c.resume().catch(() => {});
-    const o = c.createOscillator();
-    o.type = type || 'sine';
-    o.frequency.value = freq;
-    const g = c.createGain();
-    g.gain.value = 0.0001;
-    o.connect(g);
-    g.connect(c.destination);
-    const t = c.currentTime;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(Math.max(0.0002, gainVal || 0.04), t + 0.012);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
-    o.start(t);
-    o.stop(t + dur + 0.02);
-  }
-
   function _playBufferKey(key, gain) {
     const c = ensureCtx();
     if (!c) return false;
@@ -461,59 +434,18 @@ window.GameAudioTheme = (function () {
   }
 
   function playSendBlip() {
-    if (!enabled()) return;
-    if (_playBufferKey('ui_send', 0.55)) return;
-    _beep(620, 0.055, 'sine', 0.028);
+    /* Intentionally silent — no send acknowledgment beep. */
   }
 
   function playWinStinger() {
-    if (!enabled()) return;
-    if (_playBufferKey('ui_win', 0.5)) return;
-    const c = ensureCtx();
-    if (!c) return;
-    c.resume().catch(() => {});
-    const freqs = [523, 659, 784, 1046];
-    const step = 0.07;
-    freqs.forEach((f, i) => {
-      const o = c.createOscillator();
-      o.type = 'sine';
-      o.frequency.value = f;
-      const g = c.createGain();
-      g.gain.value = 0.0001;
-      o.connect(g);
-      g.connect(c.destination);
-      const t0 = c.currentTime + i * step;
-      g.gain.setValueAtTime(0.0001, t0);
-      g.gain.exponentialRampToValueAtTime(0.045, t0 + 0.02);
-      g.gain.exponentialRampToValueAtTime(0.0001, t0 + step * 1.4);
-      o.start(t0);
-      o.stop(t0 + step * 2);
-    });
+    /* Disabled to keep all non-music beeps/stingers silent. */
   }
 
   function playLoseStinger() {
-    if (!enabled()) return;
-    if (_playBufferKey('ui_lose', 0.52)) return;
-    const c = ensureCtx();
-    if (!c) return;
-    c.resume().catch(() => {});
-    const o = c.createOscillator();
-    o.type = 'sawtooth';
-    o.frequency.setValueAtTime(130, c.currentTime);
-    o.frequency.exponentialRampToValueAtTime(38, c.currentTime + 0.45);
-    const g = c.createGain();
-    g.gain.value = 0.0001;
-    o.connect(g);
-    g.connect(c.destination);
-    const t = c.currentTime;
-    g.gain.exponentialRampToValueAtTime(0.05, t + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-    o.start(t);
-    o.stop(t + 0.55);
+    /* Disabled to keep all non-music beeps/stingers silent. */
   }
 
   return {
-    LS_KEY,
     LS_MUSIC_KEY,
     enabled,
     musicEnabled,

@@ -186,17 +186,9 @@ def gen_ambient_sector(seconds: float) -> list[float]:
 
 
 def gen_ui_send() -> list[float]:
-    """Soft terminal tick + airy click."""
-    dur = 0.085
-    n = int(SR * dur)
-    out: list[float] = []
-    for i in range(n):
-        t = i / SR
-        env = math.exp(-t * 48.0)
-        tick = 0.32 * env * math.sin(2 * math.pi * 1240 * t)
-        body = 0.18 * env * math.sin(2 * math.pi * 415 * t + 0.8 * math.sin(2 * math.pi * 1660 * t))
-        out.append(soft_saturate(tick + body, 1.4))
-    return normalize_peak(comb_room(out, 0.11), 0.92)
+    """Silent placeholder — send blip is disabled in the game client."""
+    n = max(64, int(SR * 0.02))
+    return [0.0] * n
 
 
 def gen_ui_win() -> list[float]:
@@ -250,22 +242,22 @@ def gen_music_qlab(seconds: float) -> list[float]:
         c = chords[seg]
         tl = t % chord_len
         w = lcg_white(i + 12, 0x71C)
-        air = 0.018 * pink_kellet_step(pink_s, w)
+        air = 0.011 * pink_kellet_step(pink_s, w)
         edge = min(tl, chord_len - tl)
         swell = 0.72 + 0.28 * math.sin(math.pi * edge / (chord_len * 0.5)) ** 0.85
-        pad = sum(0.04 * math.sin(2 * math.pi * f * t) * swell for f in c)
-        pad += sum(0.014 * math.sin(2 * math.pi * 2.005 * f * t) * swell for f in c)
-        pad += sum(0.008 * math.sin(2 * math.pi * 3.01 * f * t) * swell for f in c)
+        pad = sum(0.026 * math.sin(2 * math.pi * f * t) * swell for f in c)
+        pad += sum(0.009 * math.sin(2 * math.pi * 2.005 * f * t) * swell for f in c)
+        pad += sum(0.005 * math.sin(2 * math.pi * 3.01 * f * t) * swell for f in c)
         br = bass_hz[seg]
-        bass = 0.062 * math.sin(2 * math.pi * br * t) * (0.58 + 0.42 * math.sin(math.pi * tl / chord_len) ** 2)
+        bass = 0.04 * math.sin(2 * math.pi * br * t) * (0.58 + 0.42 * math.sin(math.pi * tl / chord_len) ** 2)
         if tl < 0.22:
             bass *= math.sin((tl / 0.22) * math.pi * 0.5) ** 0.9
         if chord_len - tl < 0.22:
             bass *= math.sin(((chord_len - tl) / 0.22) * math.pi * 0.5) ** 0.9
-        out.append(soft_saturate(pad + bass + air, 1.06))
+        out.append(soft_saturate(pad + bass + air, 1.02))
     seamless_loop_blend(out, 155)
-    smooth_one_pole(out, 0.981)
-    return normalize_peak(out, 0.85)
+    smooth_one_pole(out, 0.985)
+    return normalize_peak(out, 0.56)
 
 
 def gen_music_glass(seconds: float) -> list[float]:
@@ -280,18 +272,18 @@ def gen_music_glass(seconds: float) -> list[float]:
         f2 = 392.0 + 11.0 * math.sin(2 * math.pi * 0.052 * t + 1.1)
         f3 = 466.16 + 8.0 * math.sin(2 * math.pi * 0.044 * t + 2.0)
         s = (
-            0.042 * math.sin(2 * math.pi * f1 * t)
-            + 0.038 * math.sin(2 * math.pi * f2 * t + 0.35)
-            + 0.034 * math.sin(2 * math.pi * f3 * t + 0.7)
+            0.027 * math.sin(2 * math.pi * f1 * t)
+            + 0.024 * math.sin(2 * math.pi * f2 * t + 0.35)
+            + 0.022 * math.sin(2 * math.pi * f3 * t + 0.7)
         )
-        s += 0.012 * math.sin(2 * math.pi * f1 * 2.002 * t)
-        s += 0.009 * math.sin(2 * math.pi * 174.6 * t)
+        s += 0.008 * math.sin(2 * math.pi * f1 * 2.002 * t)
+        s += 0.006 * math.sin(2 * math.pi * 174.6 * t)
         w = lcg_white(i + 44, 0x600D)
-        s += 0.024 * pink_kellet_step(pink_s, w) * (0.62 + 0.38 * math.sin(2 * math.pi * 0.031 * t + u))
-        out.append(soft_saturate(s, 1.05))
+        s += 0.015 * pink_kellet_step(pink_s, w) * (0.62 + 0.38 * math.sin(2 * math.pi * 0.031 * t + u))
+        out.append(soft_saturate(s, 1.02))
     seamless_loop_blend(out, 145)
-    smooth_one_pole(out, 0.982)
-    return normalize_peak(out, 0.84)
+    smooth_one_pole(out, 0.986)
+    return normalize_peak(out, 0.54)
 
 
 def gen_music_sector(seconds: float) -> list[float]:
@@ -305,22 +297,22 @@ def gen_music_sector(seconds: float) -> list[float]:
         w = lcg_white(i + 900, 0xCAB)
         pk = pink_kellet_step(pink_s, w)
         bed = (
-            0.038 * math.sin(2 * math.pi * 38 * t)
-            + 0.022 * math.sin(2 * math.pi * 57 * t + 0.15 * math.sin(2 * math.pi * 19 * t))
-            + 0.014 * pk
+            0.024 * math.sin(2 * math.pi * 38 * t)
+            + 0.014 * math.sin(2 * math.pi * 57 * t + 0.15 * math.sin(2 * math.pi * 19 * t))
+            + 0.009 * pk
         )
-        halo = 0.012 * math.sin(2 * math.pi * 220 * t) * (0.5 + 0.5 * math.sin(2 * math.pi * 0.017 * t))
+        halo = 0.007 * math.sin(2 * math.pi * 220 * t) * (0.5 + 0.5 * math.sin(2 * math.pi * 0.017 * t))
         hit = 0.0
         u = t % seconds
         for t0, hz in hits:
             du = u - t0
             if 0 <= du < 0.62:
                 env = math.sin(math.pi * du / 0.62) ** 1.65
-                hit += 0.028 * env * math.sin(2 * math.pi * hz * t)
-        out.append(soft_saturate(bed + halo + hit, 1.08))
+                hit += 0.014 * env * math.sin(2 * math.pi * hz * t)
+        out.append(soft_saturate(bed + halo + hit, 1.04))
     seamless_loop_blend(out, 160)
-    smooth_one_pole(out, 0.98)
-    return normalize_peak(out, 0.86)
+    smooth_one_pole(out, 0.985)
+    return normalize_peak(out, 0.55)
 
 
 def gen_ui_lose() -> list[float]:
