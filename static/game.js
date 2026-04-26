@@ -304,7 +304,7 @@ async function startGame(storyId) {
     const data = await res.json();
 
     if (data.story) {
-      const titleEl = document.querySelector('.terminal-title');
+      const titleEl = document.querySelector('.header-logo');
       if (titleEl) {
         titleEl.textContent = data.story.icon + ' ' + data.story.title;
         titleEl.style.color = data.story.color;
